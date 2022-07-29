@@ -27,8 +27,7 @@ This article is based off this video:
 [Azure Function Versions](https://docs.microsoft.com/en-au/azure/azure-functions/functions-reference-node?tabs=v2-v3-v4-export%2Cv2-v3-v4-done%2Cv2%2Cv2-log-custom-telemetry%2Cv2-accessing-request-and-response%2Cwindows-setting-the-node-version#node-version "Azure Function Versions")
 
 ## Install
-#### Functions Cli
-[Azure Functions Cli](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Cmacos%2Ccsharp%2Cportal%2Cbash "Azure Functions Core Tools")
+### [Azure Functions Cli](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Cmacos%2Ccsharp%2Cportal%2Cbash "Azure Functions Core Tools")
 ```bash
 brew tap azure/functions
 brew install azure-functions-core-tools@4
@@ -36,25 +35,24 @@ brew install azure-functions-core-tools@4
 brew link --overwrite azure-functions-core-tools@4
 ```
 
-#### Static Web App (SWA) Cli
-[Static Web App Cli](https://azure.github.io/static-web-apps-cli/docs/use/install/)
+### [Static Web App Cli](https://azure.github.io/static-web-apps-cli/docs/use/install/)
 ```bash
 npm install -g @azure/static-web-apps-cli
 ```
 
 ## Host SWA Locally with Cli
-#### Create Directories
+### Create Directories
 ```bash
 mkdir swa-test && cd swa-test
 mkdir client && mkdir api 
 ```
 
-#### Create Basic Web Client
+### Create Basic Web Client
 ```bash
 cd client && curl https://raw.githubusercontent.com/vuejs/vuejs.org/master/src/v2/examples/vue-20-todomvc/index.html -o index.html
 ```
 
-#### Serve Web Client Locally
+### Serve Web Client Locally
 ```bash
 cd .. #pwd == swa-test
 swa start client
@@ -64,14 +62,14 @@ Go to the localhost address to see your basic todo website running e.g.
 [http://localhost:4280](http://localhost:4280)
 
 ## Connect to Api
-#### Create Azure Function
+### Create Azure Function
 ```bash
 cd api
 func init --worker-runtime dotnet
 func new --name ToDo --template HttpTrigger
 ```
 
-#### Run Client & Api
+### Run Client & Api
 ```bash
 cd .. #pwd == swa-test
 swa start ./client --api-location ./api
@@ -91,7 +89,7 @@ Hello, test. This HTTP triggered function executed successfully.
  
 However, the client is not talking to the api yet so we need to make some changes.
 
-#### Update Client
+### Update Client
 f you manage to follow the code below you’ll have the client and api talking via the GET method and it will load in the ToDo when the client starts up. 
 
 If you want to add the full Add, Edit, Delete, Update functionality (or just want to skip the code below) have a look at the full code at the repo:
@@ -158,7 +156,7 @@ If you want to add the full Add, Edit, Delete, Update functionality (or just wan
 
 ```
 
-#### Update Api
+### Update Api
 ```cs
 public static class ToDoHandler
 	{

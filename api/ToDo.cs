@@ -7,29 +7,101 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+
 
 namespace api
 {
-    public static class ToDo
-    {
-        [FunctionName("ToDo")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request.");
 
-            string name = req.Query["name"];
+	public static class ToDoHandler
+	{
+		static List<ToDo> _db = new List<ToDo>();
+		static int _nextId = 1;
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+		static ToDoHandler()
+		{
+			_db.Add(new ToDo { Id = 1, Title = "Hello from Azure Function!", Completed = true });
+			_db.Add(new ToDo { Id = 2, Title = "Hello, from the other side", Completed = false });
 
-            string responseMessage = string.IsNullOrEmpty(name)
-                ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {name}. This HTTP triggered function executed successfully.";
+		}
 
-            return new OkObjectResult(responseMessage);
-        }
-    }
+		[FunctionName("Get")]
+		public static async Task<IActionResult> GetTodos(
+				[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "todo/{id:int?}")] HttpRequest req,
+				ILogger log,
+								int? id)
+		{
+			if (id == null)
+				return new OkObjectResult(_db);
+
+			var todoTask = _db.Find(i => i.Id == id);
+
+			if (todoTask == null)
+				return await Task.FromResult<IActionResult>(new NotFoundResult());
+
+			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+		}
+
+		[FunctionName("Post")]
+		public static async Task<IActionResult> Post(
+				[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "todo")] HttpRequest req,
+				ILogger log)
+		{
+			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			var data = JsonConvert.DeserializeObject<ToDo>(requestBody);
+
+			if (data == null)
+				return await Task.FromResult<IActionResult>(new BadRequestObjectResult("ToDo not provided in correct format."));
+
+			if (data.Id == 0)
+			{
+				data.Id = _nextId;
+				_nextId++;
+			}
+
+			_db.Add(data);
+			return await Task.FromResult<IActionResult>(new CreatedAtActionResult(nameof(GetTodos), nameof(ToDoHandler), new { id = data.Id }, data));
+		}
+
+		[FunctionName("Patch")]
+		public static async Task<IActionResult> Patch([HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "todo/{id}")] HttpRequest req, 
+        ILogger log, int id)
+		{
+			var todoTask = _db.Find(i => i.Id == id);
+
+			if (todoTask == null)
+				return await Task.FromResult<IActionResult>(new NotFoundResult());
+
+			string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			ToDo data = JsonConvert.DeserializeObject<ToDo>(requestBody);
+
+			todoTask.Title = data.Title ?? todoTask.Title;
+			todoTask.Completed = data.Completed != false ? data.Completed : todoTask.Completed;
+
+			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+		}
+
+		[FunctionName("Delete")]
+		public static async Task<IActionResult> Delete(
+				[HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "todo/{id}")] HttpRequest req,
+				ILogger log,
+				int id)
+		{
+			var todoTask = _db.Find(i => i.Id == id);
+
+			if (todoTask == null)
+				return await Task.FromResult<IActionResult>(new NotFoundResult());
+
+			_db.Remove(todoTask);
+
+			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+		}
+	}
+
+	internal class ToDo
+	{
+		public int Id { get; internal set; }
+		public string Title { get; internal set; }
+		public bool Completed { get; internal set; }
+	}
 }

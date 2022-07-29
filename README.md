@@ -93,7 +93,7 @@ However, the client is not talking to the api yet so we need to make some change
 f you manage to follow the code below you’ll have the client and api talking via the GET method and it will load in the ToDo when the client starts up. 
 
 If you want to add the full Add, Edit, Delete, Update functionality (or just want to skip the code below) have a look at the full code at the repo:
-[https://github.com/tombrereton/swa-cli]
+[https://github.com/tombrereton/swa-cli](https://github.com/tombrereton/swa-cli)
 
 
 ```js

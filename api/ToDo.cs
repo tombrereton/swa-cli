@@ -16,7 +16,7 @@ namespace api
 	public static class ToDoHandler
 	{
 		static List<ToDo> _db = new List<ToDo>();
-		static int _nextId = 1;
+		static int _nextId = 3;
 
 		static ToDoHandler()
 		{
@@ -26,7 +26,8 @@ namespace api
 		}
 
 		[FunctionName("Get")]
-		public static async Task<IActionResult> GetTodos(
+		[ActionName(nameof(Get))]
+		public static async Task<IActionResult> Get(
 				[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "todo/{id:int?}")] HttpRequest req,
 				ILogger log,
 								int? id)
@@ -60,12 +61,30 @@ namespace api
 			}
 
 			_db.Add(data);
-			return await Task.FromResult<IActionResult>(new CreatedAtActionResult(nameof(GetTodos), nameof(ToDoHandler), new { id = data.Id }, data));
+			return new CreatedAtActionResult(nameof(Get), nameof(ToDoHandler), new { id = data.Id }, data);
 		}
 
 		[FunctionName("Patch")]
-		public static async Task<IActionResult> Patch([HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "todo/{id}")] HttpRequest req, 
-        ILogger log, int id)
+		public static async Task<IActionResult> Patch([HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "todo/{id}")] HttpRequest req,
+				ILogger log, int id)
+		{
+			var todoTask = _db.Find(i => i.Id == id);
+
+			if (todoTask == null)
+				return await Task.FromResult<IActionResult>(new NotFoundResult());
+
+			string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			ToDo data = JsonConvert.DeserializeObject<ToDo>(requestBody);
+
+			todoTask.Title = data.Title ?? todoTask.Title;
+			todoTask.Completed = data.Completed != false ? data.Completed : todoTask.Completed;
+
+			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+		}
+
+		[FunctionName("Put")]
+		public static async Task<IActionResult> Put([HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "todo/{id}")] HttpRequest req,
+				ILogger log, int id)
 		{
 			var todoTask = _db.Find(i => i.Id == id);
 
@@ -98,10 +117,10 @@ namespace api
 		}
 	}
 
-	internal class ToDo
+	public class ToDo
 	{
-		public int Id { get; internal set; }
-		public string Title { get; internal set; }
-		public bool Completed { get; internal set; }
+		public int Id { get; set; }
+		public string Title { get; set; }
+		public bool Completed { get; set; }
 	}
 }

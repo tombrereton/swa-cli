@@ -38,9 +38,9 @@ namespace api
 			var todoTask = _db.Find(i => i.Id == id);
 
 			if (todoTask == null)
-				return await Task.FromResult<IActionResult>(new NotFoundResult());
+				return new NotFoundResult();
 
-			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+			return new OkObjectResult(todoTask);
 		}
 
 		[FunctionName("Post")]
@@ -52,7 +52,7 @@ namespace api
 			var data = JsonConvert.DeserializeObject<ToDo>(requestBody);
 
 			if (data == null)
-				return await Task.FromResult<IActionResult>(new BadRequestObjectResult("ToDo not provided in correct format."));
+				return new BadRequestObjectResult("ToDo not provided in correct format.");
 
 			if (data.Id == 0)
 			{
@@ -68,36 +68,34 @@ namespace api
 		public static async Task<IActionResult> Patch([HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "todo/{id}")] HttpRequest req,
 				ILogger log, int id)
 		{
-			var todoTask = _db.Find(i => i.Id == id);
+			var oldTodo = _db.Find(i => i.Id == id);
 
-			if (todoTask == null)
-				return await Task.FromResult<IActionResult>(new NotFoundResult());
+			if (oldTodo == null)
+				return new NotFoundResult();
 
 			string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			ToDo data = JsonConvert.DeserializeObject<ToDo>(requestBody);
 
-			todoTask.Title = data.Title ?? todoTask.Title;
-			todoTask.Completed = data.Completed != false ? data.Completed : todoTask.Completed;
+			var newTodo = UpdateTodo(oldTodo, data);
 
-			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+			return new OkObjectResult(newTodo);
 		}
 
 		[FunctionName("Put")]
 		public static async Task<IActionResult> Put([HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "todo/{id}")] HttpRequest req,
 				ILogger log, int id)
 		{
-			var todoTask = _db.Find(i => i.Id == id);
+			var oldTodo = _db.Find(i => i.Id == id);
 
-			if (todoTask == null)
-				return await Task.FromResult<IActionResult>(new NotFoundResult());
+			if (oldTodo == null)
+				return new NotFoundResult();
 
 			string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			ToDo data = JsonConvert.DeserializeObject<ToDo>(requestBody);
 
-			todoTask.Title = data.Title ?? todoTask.Title;
-			todoTask.Completed = data.Completed != false ? data.Completed : todoTask.Completed;
+			var newTodo = UpdateTodo(oldTodo, data);
 
-			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+			return new OkObjectResult(newTodo);
 		}
 
 		[FunctionName("Delete")]
@@ -109,11 +107,19 @@ namespace api
 			var todoTask = _db.Find(i => i.Id == id);
 
 			if (todoTask == null)
-				return await Task.FromResult<IActionResult>(new NotFoundResult());
+				return await Task.FromResult(new NotFoundResult());
 
 			_db.Remove(todoTask);
 
-			return await Task.FromResult<IActionResult>(new OkObjectResult(todoTask));
+			return await Task.FromResult(new OkObjectResult(todoTask));
+		}
+
+		private static ToDo UpdateTodo(ToDo oldTodo, ToDo newTodo)
+		{
+			oldTodo.Title = newTodo.Title ?? oldTodo.Title;
+			oldTodo.Completed = newTodo.Completed; // This means Completed property is required
+
+            return oldTodo;
 		}
 	}
 
